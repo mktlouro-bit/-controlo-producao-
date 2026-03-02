@@ -525,6 +525,144 @@
                 padding: 8px 12px;
             }
         }
+
+        .draft-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .draft-card {
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .draft-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .draft-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .draft-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .draft-badge {
+            background: #3498db;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .draft-info {
+            font-size: 13px;
+            color: #7f8c8d;
+            margin: 8px 0;
+        }
+
+        .draft-info strong {
+            color: #2c3e50;
+        }
+
+        .draft-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-draft-continue {
+            flex: 1;
+            background: #3498db;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .btn-draft-continue:hover {
+            background: #2980b9;
+        }
+
+        .btn-draft-delete {
+            background: #e74c3c;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-draft-delete:hover {
+            background: #c0392b;
+        }
+
+        .draft-time {
+            font-size: 11px;
+            color: #95a5a6;
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+        .empty-drafts {
+            text-align: center;
+            padding: 60px 20px;
+            color: #95a5a6;
+        }
+
+        .empty-drafts-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .current-draft-indicator {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+            padding: 12px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .current-draft-indicator.show {
+            display: flex;
+        }
+
+        .btn-cancel-draft {
+            background: #6c757d;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -556,6 +694,7 @@
 
         <div class="tabs">
             <div class="tab active" onclick="showTab('registo')">📝 Registo de Dados</div>
+            <div class="tab" onclick="showTab('progresso')">⏳ Registos em Progresso</div>
             <div class="tab" onclick="showTab('consulta')">📊 Consulta de Dados</div>
             <div class="tab" onclick="showTab('analise')">📈 Análise e Gráficos</div>
         </div>
@@ -564,6 +703,11 @@
         <div id="registo" class="tab-content active">
             <div class="shared-indicator">
                 🌐 <strong>Dados Sincronizados em Tempo Real:</strong> Todos os registos são partilhados e visíveis em todos os dispositivos conectados!
+            </div>
+
+            <div class="current-draft-indicator" id="currentDraftIndicator">
+                <span>⏳ <strong>A editar:</strong> <span id="currentDraftName"></span></span>
+                <button class="btn-cancel-draft" onclick="cancelCurrentDraft()">Cancelar e Criar Novo</button>
             </div>
 
             <div class="success-message" id="successMessage">
@@ -637,8 +781,8 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="racio">Rácio *</label>
-                        <select id="racio" required>
+                        <label for="racio">Rácio</label>
+                        <select id="racio">
                             <option value="">Selecione...</option>
                             <option value="Inteiro">Inteiro</option>
                             <option value="Rácio 20%">Rácio 20%</option>
@@ -682,16 +826,45 @@
                         </div>
                         <input type="text" id="phValor" placeholder="Valor do PH" required>
                     </div>
+
+                    <div class="form-group">
+                        <label for="ph1">Valor PH1</label>
+                        <input type="text" id="ph1" placeholder="Valor PH1 (opcional)">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ph2">Valor PH2</label>
+                        <input type="text" id="ph2" placeholder="Valor PH2 (opcional)">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ph3">Valor PH3</label>
+                        <input type="text" id="ph3" placeholder="Valor PH3 (opcional)">
+                    </div>
                 </div>
 
-                <div style="margin-top: 30px; display: flex; gap: 10px;">
-                    <button type="submit" class="btn btn-primary">💾 Gravar e Sincronizar</button>
+                <div style="margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-success" onclick="saveDraft()">💾 Guardar Rascunho</button>
+                    <button type="button" class="btn btn-success" onclick="saveDraftAndNew()" style="background: #16a085;">💾➕ Guardar e Criar Novo</button>
+                    <button type="submit" class="btn btn-primary">✅ Gravar e Finalizar</button>
                     <button type="button" class="btn btn-secondary" onclick="clearForm()">🔄 Limpar Formulário</button>
                 </div>
             </form>
         </div>
 
-        <!-- TAB 2: CONSULTA -->
+        <!-- TAB 2: REGISTOS EM PROGRESSO -->
+        <div id="progresso" class="tab-content">
+            <div style="margin-bottom: 20px;">
+                <h3 style="color: #2c3e50;">⏳ Registos em Progresso</h3>
+                <p style="color: #7f8c8d; margin-top: 10px;">
+                    Aqui pode retomar o preenchimento de registos que guardou como rascunho. 
+                    Útil quando está a preencher várias cubas em simultâneo.
+                </p>
+            </div>
+            <div id="draftsContainer"></div>
+        </div>
+
+        <!-- TAB 3: CONSULTA -->
         <div id="consulta" class="tab-content">
             <div class="filter-section">
                 <h3 style="margin-bottom: 15px; color: #2c3e50;">Filtros de Pesquisa</h3>
@@ -794,8 +967,10 @@
         
         let database;
         let allData = [];
+        let allDrafts = [];
         let chartInstances = {};
         let isFirebaseConfigured = false;
+        let currentDraftId = null;
 
         // Verificar se Firebase está configurado
         function checkFirebaseConfig() {
@@ -844,6 +1019,22 @@
                     // Atualizar tabela se estiver na aba consulta
                     if (document.getElementById('consulta').classList.contains('active')) {
                         loadTableData();
+                    }
+                });
+
+                // Escutar mudanças nos drafts
+                database.ref('drafts').on('value', (snapshot) => {
+                    allDrafts = [];
+                    if (snapshot.exists()) {
+                        snapshot.forEach((childSnapshot) => {
+                            allDrafts.push(childSnapshot.val());
+                        });
+                    }
+                    allDrafts.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+                    
+                    // Atualizar lista de drafts se estiver na aba progresso
+                    if (document.getElementById('progresso').classList.contains('active')) {
+                        loadDrafts();
                     }
                 });
 
@@ -955,6 +1146,11 @@
             document.getElementById('phValor').classList.remove('ph-ok');
             document.getElementById('fermentoOutro').style.display = 'none';
             document.getElementById('producaoOutro').style.display = 'none';
+            document.getElementById('ph1').value = '';
+            document.getElementById('ph2').value = '';
+            document.getElementById('ph3').value = '';
+            currentDraftId = null;
+            document.getElementById('currentDraftIndicator').classList.remove('show');
         }
 
         function showTab(tabName) {
@@ -966,6 +1162,8 @@
 
             if (tabName === 'consulta') {
                 loadTableData();
+            } else if (tabName === 'progresso') {
+                loadDrafts();
             }
         }
 
@@ -992,24 +1190,35 @@
                 : producao;
 
             const newData = {
-                id: Date.now().toString(),
+                id: currentDraftId || Date.now().toString(),
                 data: document.getElementById('data').value,
                 tanque: document.getElementById('tanque').value,
                 receita: document.getElementById('receita').value,
                 producao: producaoValue,
                 gordura: parseFloat(document.getElementById('gordura').value),
                 proteina: parseFloat(document.getElementById('proteina').value),
-                racio: document.getElementById('racio').value,
+                racio: document.getElementById('racio').value || '',
                 fermento: fermentoValue,
                 tempCoagulacao: parseFloat(document.getElementById('tempCoagulacao').value),
                 tempLavagem: parseFloat(document.getElementById('tempLavagem').value),
                 ph: document.getElementById('phValor').value,
-                timestamp: new Date().toISOString()
+                ph1: document.getElementById('ph1').value || '',
+                ph2: document.getElementById('ph2').value || '',
+                ph3: document.getElementById('ph3').value || '',
+                timestamp: new Date().toISOString(),
+                status: 'completo'
             };
 
             // Gravar no Firebase
             database.ref('producao/' + newData.id).set(newData)
                 .then(() => {
+                    // Se era um draft, eliminar da secção de drafts
+                    if (currentDraftId) {
+                        database.ref('drafts/' + currentDraftId).remove();
+                        currentDraftId = null;
+                        document.getElementById('currentDraftIndicator').classList.remove('show');
+                    }
+
                     // Mostrar mensagem de sucesso
                     const successMsg = document.getElementById('successMessage');
                     successMsg.style.display = 'block';
@@ -1044,6 +1253,334 @@
                 .catch((error) => {
                     alert('Erro ao eliminar registo: ' + error.message);
                 });
+        }
+
+        // ========================================
+        // GESTÃO DE DRAFTS (RASCUNHOS)
+        // ========================================
+
+        function saveDraft() {
+            if (!isFirebaseConfigured) {
+                alert('Firebase não está configurado. Por favor, configure primeiro.');
+                return;
+            }
+
+            const fermento = document.getElementById('fermento').value;
+            const fermentoValue = fermento === 'outro' 
+                ? document.getElementById('fermentoOutroTexto').value 
+                : fermento;
+
+            const producao = document.getElementById('producao').value;
+            const producaoValue = producao === 'outro' 
+                ? document.getElementById('producaoOutroTexto').value 
+                : producao;
+
+            // Criar identificador do draft baseado no tanque e data
+            const tanque = document.getElementById('tanque').value;
+            const data = document.getElementById('data').value;
+            const receita = document.getElementById('receita').value;
+            
+            const draftName = `${receita ? receita : 'Receita'} - Tanque ${tanque || '?'} - ${data || new Date().toLocaleDateString('pt-PT')}`;
+
+            // Verificar se está a atualizar um draft existente ou criar novo
+            const isUpdatingExisting = currentDraftId && allDrafts.some(d => d.id === currentDraftId);
+            const draftId = isUpdatingExisting ? currentDraftId : Date.now().toString();
+
+            const draftData = {
+                id: draftId,
+                draftName: draftName,
+                data: data,
+                tanque: tanque,
+                receita: receita,
+                producao: producaoValue,
+                gordura: document.getElementById('gordura').value,
+                proteina: document.getElementById('proteina').value,
+                racio: document.getElementById('racio').value,
+                fermento: fermentoValue,
+                tempCoagulacao: document.getElementById('tempCoagulacao').value,
+                tempLavagem: document.getElementById('tempLavagem').value,
+                ph: document.getElementById('phValor').value,
+                phOk: document.getElementById('phOk').checked,
+                ph1: document.getElementById('ph1').value,
+                ph2: document.getElementById('ph2').value,
+                ph3: document.getElementById('ph3').value,
+                fermentoOutro: document.getElementById('fermentoOutroTexto').value,
+                producaoOutro: document.getElementById('producaoOutroTexto').value,
+                lastModified: new Date().toISOString(),
+                status: 'rascunho'
+            };
+
+            database.ref('drafts/' + draftData.id).set(draftData)
+                .then(() => {
+                    // Se estava a atualizar um draft existente, manter o currentDraftId
+                    // Se criou um novo, NÃO manter (para próximo rascunho ser novo também)
+                    if (!isUpdatingExisting) {
+                        currentDraftId = null;
+                        document.getElementById('currentDraftIndicator').classList.remove('show');
+                    } else {
+                        currentDraftId = draftId;
+                        document.getElementById('currentDraftIndicator').classList.add('show');
+                        document.getElementById('currentDraftName').textContent = draftName;
+                    }
+
+                    // Mostrar mensagem
+                    const successMsg = document.getElementById('successMessage');
+                    if (isUpdatingExisting) {
+                        successMsg.innerHTML = '💾 Rascunho atualizado!';
+                    } else {
+                        successMsg.innerHTML = '💾 Novo rascunho guardado! Pode preencher outro registo.';
+                    }
+                    successMsg.style.display = 'block';
+                    setTimeout(() => {
+                        successMsg.style.display = 'none';
+                        successMsg.innerHTML = '✓ Dados gravados e sincronizados com sucesso!';
+                    }, 3000);
+
+                    // Se criou novo rascunho, limpar formulário para facilitar próximo registo
+                    if (!isUpdatingExisting) {
+                        clearForm();
+                    }
+                })
+                .catch((error) => {
+                    alert('Erro ao guardar rascunho: ' + error.message);
+                });
+        }
+
+        function saveDraftAndNew() {
+            if (!isFirebaseConfigured) {
+                alert('Firebase não está configurado. Por favor, configure primeiro.');
+                return;
+            }
+
+            const fermento = document.getElementById('fermento').value;
+            const fermentoValue = fermento === 'outro' 
+                ? document.getElementById('fermentoOutroTexto').value 
+                : fermento;
+
+            const producao = document.getElementById('producao').value;
+            const producaoValue = producao === 'outro' 
+                ? document.getElementById('producaoOutroTexto').value 
+                : producao;
+
+            const tanque = document.getElementById('tanque').value;
+            const data = document.getElementById('data').value;
+            const receita = document.getElementById('receita').value;
+            
+            const draftName = `${receita ? receita : 'Receita'} - Tanque ${tanque || '?'} - ${data || new Date().toLocaleDateString('pt-PT')}`;
+
+            // SEMPRE criar um novo draft (mesmo se estava a editar outro)
+            const draftId = Date.now().toString();
+
+            const draftData = {
+                id: draftId,
+                draftName: draftName,
+                data: data,
+                tanque: tanque,
+                receita: receita,
+                producao: producaoValue,
+                gordura: document.getElementById('gordura').value,
+                proteina: document.getElementById('proteina').value,
+                racio: document.getElementById('racio').value,
+                fermento: fermentoValue,
+                tempCoagulacao: document.getElementById('tempCoagulacao').value,
+                tempLavagem: document.getElementById('tempLavagem').value,
+                ph: document.getElementById('phValor').value,
+                phOk: document.getElementById('phOk').checked,
+                ph1: document.getElementById('ph1').value,
+                ph2: document.getElementById('ph2').value,
+                ph3: document.getElementById('ph3').value,
+                fermentoOutro: document.getElementById('fermentoOutroTexto').value,
+                producaoOutro: document.getElementById('producaoOutroTexto').value,
+                lastModified: new Date().toISOString(),
+                status: 'rascunho'
+            };
+
+            database.ref('drafts/' + draftData.id).set(draftData)
+                .then(() => {
+                    // SEMPRE limpar para criar novo
+                    currentDraftId = null;
+                    document.getElementById('currentDraftIndicator').classList.remove('show');
+
+                    // Mostrar mensagem
+                    const successMsg = document.getElementById('successMessage');
+                    successMsg.innerHTML = '💾 Rascunho guardado! Formulário limpo para nova cuba.';
+                    successMsg.style.display = 'block';
+                    setTimeout(() => {
+                        successMsg.style.display = 'none';
+                        successMsg.innerHTML = '✓ Dados gravados e sincronizados com sucesso!';
+                    }, 3000);
+
+                    // Limpar formulário
+                    clearForm();
+                })
+                .catch((error) => {
+                    alert('Erro ao guardar rascunho: ' + error.message);
+                });
+        }
+
+        function loadDrafts() {
+            const container = document.getElementById('draftsContainer');
+
+            if (allDrafts.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-drafts">
+                        <div class="empty-drafts-icon">📋</div>
+                        <h3>Nenhum registo em progresso</h3>
+                        <p>Quando guardar um registo como rascunho, ele aparecerá aqui.</p>
+                        <p style="margin-top: 20px;">
+                            <strong>Como usar:</strong><br>
+                            1. Preencha parcialmente um registo<br>
+                            2. Clique "Guardar Rascunho"<br>
+                            3. Volte aqui para continuar mais tarde
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="draft-cards">';
+
+            allDrafts.forEach(draft => {
+                const lastModified = new Date(draft.lastModified);
+                const timeAgo = getTimeAgo(lastModified);
+                
+                // Calcular percentagem de campos preenchidos
+                const totalFields = 13; // Total de campos principais
+                let filledFields = 0;
+                if (draft.data) filledFields++;
+                if (draft.tanque) filledFields++;
+                if (draft.receita) filledFields++;
+                if (draft.producao) filledFields++;
+                if (draft.gordura) filledFields++;
+                if (draft.proteina) filledFields++;
+                if (draft.racio) filledFields++;
+                if (draft.fermento) filledFields++;
+                if (draft.tempCoagulacao) filledFields++;
+                if (draft.tempLavagem) filledFields++;
+                if (draft.ph) filledFields++;
+                
+                const percentage = Math.round((filledFields / totalFields) * 100);
+
+                html += `
+                    <div class="draft-card">
+                        <div class="draft-card-header">
+                            <div class="draft-title">${draft.draftName}</div>
+                            <div class="draft-badge">Rascunho</div>
+                        </div>
+                        <div class="draft-info">
+                            <strong>Progresso:</strong> ${percentage}% preenchido (${filledFields}/${totalFields} campos)
+                        </div>
+                        ${draft.tanque ? `<div class="draft-info"><strong>Tanque:</strong> ${draft.tanque}</div>` : ''}
+                        ${draft.receita ? `<div class="draft-info"><strong>Receita:</strong> ${draft.receita}</div>` : ''}
+                        ${draft.producao ? `<div class="draft-info"><strong>Produção:</strong> ${draft.producao}</div>` : ''}
+                        <div class="draft-time">Modificado ${timeAgo}</div>
+                        <div class="draft-actions">
+                            <button class="btn-draft-continue" onclick="continueDraft('${draft.id}')">
+                                ✏️ Continuar
+                            </button>
+                            <button class="btn-draft-delete" onclick="deleteDraft('${draft.id}')">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function continueDraft(draftId) {
+            const draft = allDrafts.find(d => d.id === draftId);
+            if (!draft) return;
+
+            // Preencher formulário com dados do draft
+            document.getElementById('data').value = draft.data || '';
+            document.getElementById('tanque').value = draft.tanque || '';
+            document.getElementById('receita').value = draft.receita || '';
+            document.getElementById('gordura').value = draft.gordura || '';
+            document.getElementById('proteina').value = draft.proteina || '';
+            document.getElementById('racio').value = draft.racio || '';
+            document.getElementById('tempCoagulacao').value = draft.tempCoagulacao || '';
+            document.getElementById('tempLavagem').value = draft.tempLavagem || '';
+            document.getElementById('phValor').value = draft.ph || '';
+            document.getElementById('ph1').value = draft.ph1 || '';
+            document.getElementById('ph2').value = draft.ph2 || '';
+            document.getElementById('ph3').value = draft.ph3 || '';
+
+            // Fermento
+            if (draft.fermento && ['111', '112', '113', '225', '226'].includes(draft.fermento)) {
+                document.getElementById('fermento').value = draft.fermento;
+            } else if (draft.fermento) {
+                document.getElementById('fermento').value = 'outro';
+                document.getElementById('fermentoOutroTexto').value = draft.fermento;
+                toggleFermentoOutro();
+            }
+
+            // Produção
+            if (draft.producao && parseInt(draft.producao) >= 1 && parseInt(draft.producao) <= 15) {
+                document.getElementById('producao').value = draft.producao;
+            } else if (draft.producao) {
+                document.getElementById('producao').value = 'outro';
+                document.getElementById('producaoOutroTexto').value = draft.producao;
+                toggleProducaoOutro();
+            }
+
+            // PH OK checkbox
+            if (draft.phOk) {
+                document.getElementById('phOk').checked = true;
+                togglePH();
+            }
+
+            // Definir draft atual
+            currentDraftId = draftId;
+            document.getElementById('currentDraftIndicator').classList.add('show');
+            document.getElementById('currentDraftName').textContent = draft.draftName;
+
+            // Mudar para tab de registo
+            showTab('registo');
+            document.querySelector('.tab.active').classList.remove('active');
+            document.querySelectorAll('.tab')[0].classList.add('active');
+
+            // Scroll para o topo
+            window.scrollTo(0, 0);
+        }
+
+        function deleteDraft(draftId) {
+            if (!confirm('Tem certeza que deseja eliminar este rascunho?')) return;
+
+            if (!isFirebaseConfigured) {
+                alert('Firebase não está configurado.');
+                return;
+            }
+
+            database.ref('drafts/' + draftId).remove()
+                .then(() => {
+                    // Se era o draft atual, limpar
+                    if (currentDraftId === draftId) {
+                        cancelCurrentDraft();
+                    }
+                })
+                .catch((error) => {
+                    alert('Erro ao eliminar rascunho: ' + error.message);
+                });
+        }
+
+        function cancelCurrentDraft() {
+            currentDraftId = null;
+            document.getElementById('currentDraftIndicator').classList.remove('show');
+            clearForm();
+        }
+
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            if (seconds < 60) return 'há poucos segundos';
+            if (seconds < 3600) return `há ${Math.floor(seconds / 60)} minutos`;
+            if (seconds < 86400) return `há ${Math.floor(seconds / 3600)} horas`;
+            if (seconds < 604800) return `há ${Math.floor(seconds / 86400)} dias`;
+            
+            return date.toLocaleDateString('pt-PT');
         }
 
         // ========================================
@@ -1089,6 +1626,9 @@
                             <th>T. Coagulação (°C)</th>
                             <th>T. Lavagem (°C)</th>
                             <th>PH</th>
+                            <th>PH1</th>
+                            <th>PH2</th>
+                            <th>PH3</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
@@ -1107,11 +1647,14 @@
                         <td>${item.producao || '-'}</td>
                         <td>${item.gordura.toFixed(2)}</td>
                         <td>${item.proteina.toFixed(2)}</td>
-                        <td>${item.racio}</td>
+                        <td>${item.racio || '-'}</td>
                         <td>${item.fermento}</td>
                         <td>${item.tempCoagulacao.toFixed(1)}</td>
                         <td>${item.tempLavagem.toFixed(1)}</td>
                         <td class="${phClass}">${item.ph}</td>
+                        <td>${item.ph1 || '-'}</td>
+                        <td>${item.ph2 || '-'}</td>
+                        <td>${item.ph3 || '-'}</td>
                         <td><button class="delete-btn" onclick="deleteRecord('${item.id}')">🗑️ Eliminar</button></td>
                     </tr>
                 `;

@@ -814,8 +814,23 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="phAntesCoalho">PH Antes do Coalho</label>
+                        <input type="text" id="phAntesCoalho" placeholder="PH Antes do Coalho (opcional)">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tempoCoagulacao">Tempo de Coagulação (min)</label>
+                        <input type="number" id="tempoCoagulacao" step="1" min="0" placeholder="Tempo em minutos (opcional)">
+                    </div>
+
+                    <div class="form-group">
                         <label for="tempLavagem">Temperatura Lavagem (°C) *</label>
                         <input type="number" id="tempLavagem" step="0.1" min="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phInicioEnchimento">PH Inicio de Enchimento</label>
+                        <input type="text" id="phInicioEnchimento" placeholder="PH Inicio de Enchimento (opcional)">
                     </div>
 
                     <div class="form-group">
@@ -952,13 +967,13 @@
         // Veja o ficheiro GUIA_FIREBASE.md para instruções
         
         const firebaseConfig = {
-            apiKey: "AIzaSyBUdUJiFtH_Axct5UXN9WErYbaB-o5WFX0",
-            authDomain: "lactilouro-producao.firebaseapp.com",
-            databaseURL: "https://lactilouro-producao-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "lactilouro-producao",
-            storageBucket: "lactilouro-producao.firebasestorage.app",
-            messagingSenderId: "530914223930",
-            appId: "1:530914223930:web:e9e8d922d65cb31e525203"
+            apiKey: "SUA_API_KEY_AQUI",
+            authDomain: "seu-projeto.firebaseapp.com",
+            databaseURL: "https://seu-projeto-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "seu-projeto",
+            storageBucket: "seu-projeto.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef123456"
         };
 
         // ========================================
@@ -1149,6 +1164,9 @@
             document.getElementById('ph1').value = '';
             document.getElementById('ph2').value = '';
             document.getElementById('ph3').value = '';
+            document.getElementById('phAntesCoalho').value = '';
+            document.getElementById('tempoCoagulacao').value = '';
+            document.getElementById('phInicioEnchimento').value = '';
             currentDraftId = null;
             document.getElementById('currentDraftIndicator').classList.remove('show');
         }
@@ -1200,7 +1218,10 @@
                 racio: document.getElementById('racio').value || '',
                 fermento: fermentoValue,
                 tempCoagulacao: parseFloat(document.getElementById('tempCoagulacao').value),
+                phAntesCoalho: document.getElementById('phAntesCoalho').value || '',
+                tempoCoagulacao: document.getElementById('tempoCoagulacao').value || '',
                 tempLavagem: parseFloat(document.getElementById('tempLavagem').value),
+                phInicioEnchimento: document.getElementById('phInicioEnchimento').value || '',
                 ph: document.getElementById('phValor').value,
                 ph1: document.getElementById('ph1').value || '',
                 ph2: document.getElementById('ph2').value || '',
@@ -1298,7 +1319,10 @@
                 racio: document.getElementById('racio').value,
                 fermento: fermentoValue,
                 tempCoagulacao: document.getElementById('tempCoagulacao').value,
+                phAntesCoalho: document.getElementById('phAntesCoalho').value,
+                tempoCoagulacao: document.getElementById('tempoCoagulacao').value,
                 tempLavagem: document.getElementById('tempLavagem').value,
+                phInicioEnchimento: document.getElementById('phInicioEnchimento').value,
                 ph: document.getElementById('phValor').value,
                 phOk: document.getElementById('phOk').checked,
                 ph1: document.getElementById('ph1').value,
@@ -1383,7 +1407,10 @@
                 racio: document.getElementById('racio').value,
                 fermento: fermentoValue,
                 tempCoagulacao: document.getElementById('tempCoagulacao').value,
+                phAntesCoalho: document.getElementById('phAntesCoalho').value,
+                tempoCoagulacao: document.getElementById('tempoCoagulacao').value,
                 tempLavagem: document.getElementById('tempLavagem').value,
+                phInicioEnchimento: document.getElementById('phInicioEnchimento').value,
                 ph: document.getElementById('phValor').value,
                 phOk: document.getElementById('phOk').checked,
                 ph1: document.getElementById('ph1').value,
@@ -1445,7 +1472,7 @@
                 const timeAgo = getTimeAgo(lastModified);
                 
                 // Calcular percentagem de campos preenchidos
-                const totalFields = 13; // Total de campos principais
+                const totalFields = 16; // Total de campos principais (atualizado)
                 let filledFields = 0;
                 if (draft.data) filledFields++;
                 if (draft.tanque) filledFields++;
@@ -1456,7 +1483,10 @@
                 if (draft.racio) filledFields++;
                 if (draft.fermento) filledFields++;
                 if (draft.tempCoagulacao) filledFields++;
+                if (draft.phAntesCoalho) filledFields++;
+                if (draft.tempoCoagulacao) filledFields++;
                 if (draft.tempLavagem) filledFields++;
+                if (draft.phInicioEnchimento) filledFields++;
                 if (draft.ph) filledFields++;
                 
                 const percentage = Math.round((filledFields / totalFields) * 100);
@@ -1502,7 +1532,10 @@
             document.getElementById('proteina').value = draft.proteina || '';
             document.getElementById('racio').value = draft.racio || '';
             document.getElementById('tempCoagulacao').value = draft.tempCoagulacao || '';
+            document.getElementById('phAntesCoalho').value = draft.phAntesCoalho || '';
+            document.getElementById('tempoCoagulacao').value = draft.tempoCoagulacao || '';
             document.getElementById('tempLavagem').value = draft.tempLavagem || '';
+            document.getElementById('phInicioEnchimento').value = draft.phInicioEnchimento || '';
             document.getElementById('phValor').value = draft.ph || '';
             document.getElementById('ph1').value = draft.ph1 || '';
             document.getElementById('ph2').value = draft.ph2 || '';
@@ -1624,7 +1657,10 @@
                             <th>Rácio</th>
                             <th>Fermento</th>
                             <th>T. Coagulação (°C)</th>
+                            <th>PH Antes Coalho</th>
+                            <th>Tempo Coagulação (min)</th>
                             <th>T. Lavagem (°C)</th>
+                            <th>PH Inicio Enchimento</th>
                             <th>PH</th>
                             <th>PH1</th>
                             <th>PH2</th>
@@ -1650,7 +1686,10 @@
                         <td>${item.racio || '-'}</td>
                         <td>${item.fermento}</td>
                         <td>${item.tempCoagulacao.toFixed(1)}</td>
+                        <td>${item.phAntesCoalho || '-'}</td>
+                        <td>${item.tempoCoagulacao || '-'}</td>
                         <td>${item.tempLavagem.toFixed(1)}</td>
+                        <td>${item.phInicioEnchimento || '-'}</td>
                         <td class="${phClass}">${item.ph}</td>
                         <td>${item.ph1 || '-'}</td>
                         <td>${item.ph2 || '-'}</td>

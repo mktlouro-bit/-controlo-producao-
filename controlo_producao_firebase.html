@@ -663,6 +663,164 @@
             cursor: pointer;
             font-size: 12px;
         }
+
+        .btn-mini {
+            padding: 4px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-add {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-add:hover {
+            background: #229954;
+        }
+
+        .btn-manage {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-manage:hover {
+            background: #2980b9;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #95a5a6;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .option-list {
+            margin: 20px 0;
+        }
+
+        .option-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            transition: background 0.2s;
+        }
+
+        .option-item:hover {
+            background: #ecf0f1;
+        }
+
+        .option-name {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .btn-delete-option {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .btn-delete-option:hover {
+            background: #c0392b;
+        }
+
+        .add-option-form {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .add-option-input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .btn-add-confirm {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-add-confirm:hover {
+            background: #229954;
+        }
     </style>
 </head>
 <body>
@@ -685,6 +843,37 @@
         <p>Procure por <code>// CONFIGURAÇÃO FIREBASE</code> e substitua pelos seus valores.</p>
         <p>Veja o ficheiro <strong>GUIA_FIREBASE.md</strong> para instruções detalhadas.</p>
     </div>
+
+    <!-- Modal Gerir Fornecedores -->
+    <div class="modal-overlay" id="modalFornecedores">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Gerir Fornecedores de Leite</div>
+                <button class="modal-close" onclick="fecharModal('modalFornecedores')">×</button>
+            </div>
+            <div class="option-list" id="listaFornecedores"></div>
+            <div class="add-option-form">
+                <input type="text" class="add-option-input" id="novoFornecedor" placeholder="Nome do novo fornecedor">
+                <button class="btn-add-confirm" onclick="adicionarNovoFornecedor()">Adicionar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Gerir Rácios -->
+    <div class="modal-overlay" id="modalRacios">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Gerir Rácios</div>
+                <button class="modal-close" onclick="fecharModal('modalRacios')">×</button>
+            </div>
+            <div class="option-list" id="listaRacios"></div>
+            <div class="add-option-form">
+                <input type="text" class="add-option-input" id="novoRacio" placeholder="Nome do novo rácio (ex: Rácio 50%)">
+                <button class="btn-add-confirm" onclick="adicionarNovoRacio()">Adicionar</button>
+            </div>
+        </div>
+    </div>
+
 
     <div class="container">
         <header>
@@ -730,6 +919,22 @@
                             <option value="3">3</option>
                             <option value="4">4</option>
                         </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="loteLeite">Lote do Leite</label>
+                        <input type="text" id="loteLeite" placeholder="Lote do leite (opcional)">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fornecedor">Fornecedor do Leite</label>
+                        <select id="fornecedor">
+                            <option value="">Selecione...</option>
+                        </select>
+                        <div style="display: flex; gap: 5px; margin-top: 5px;">
+                            <button type="button" class="btn-mini btn-add" onclick="adicionarFornecedor()">➕ Adicionar</button>
+                            <button type="button" class="btn-mini btn-manage" onclick="gerirFornecedores()">⚙️ Gerir</button>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -784,10 +989,11 @@
                         <label for="racio">Rácio</label>
                         <select id="racio">
                             <option value="">Selecione...</option>
-                            <option value="Inteiro">Inteiro</option>
-                            <option value="Rácio 20%">Rácio 20%</option>
-                            <option value="Rácio 30%">Rácio 30%</option>
                         </select>
+                        <div style="display: flex; gap: 5px; margin-top: 5px;">
+                            <button type="button" class="btn-mini btn-add" onclick="adicionarRacio()">➕ Adicionar</button>
+                            <button type="button" class="btn-mini btn-manage" onclick="gerirRacios()">⚙️ Gerir</button>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -856,6 +1062,11 @@
                         <label for="ph3">Valor PH3</label>
                         <input type="text" id="ph3" placeholder="Valor PH3 (opcional)">
                     </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label for="observacoes">Observações</label>
+                    <textarea id="observacoes" rows="3" placeholder="Observações adicionais (opcional)" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 4px; font-family: inherit; font-size: 14px; resize: vertical;"></textarea>
                 </div>
 
                 <div style="margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap;">
@@ -967,7 +1178,7 @@
         // Veja o ficheiro GUIA_FIREBASE.md para instruções
         
         const firebaseConfig = {
-            apiKey: "AIzaSyBUdUJiFtH_Axct5UXN9WErYbaB-o5WFX0",
+           apiKey: "AIzaSyBUdUJiFtH_Axct5UXN9WErYbaB-o5WFX0",
             authDomain: "lactilouro-producao.firebaseapp.com",
             databaseURL: "https://lactilouro-producao-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "lactilouro-producao",
@@ -986,6 +1197,8 @@
         let chartInstances = {};
         let isFirebaseConfigured = false;
         let currentDraftId = null;
+        let fornecedoresList = [];
+        let raciosList = [];
 
         // Verificar se Firebase está configurado
         function checkFirebaseConfig() {
@@ -1051,6 +1264,30 @@
                     if (document.getElementById('progresso').classList.contains('active')) {
                         loadDrafts();
                     }
+                });
+
+                // Escutar mudanças nas listas de fornecedores
+                database.ref('config/fornecedores').on('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        fornecedoresList = snapshot.val();
+                    } else {
+                        // Valores padrão
+                        fornecedoresList = ['Leite do Campo', 'Penlac', 'Hoogwest'];
+                        database.ref('config/fornecedores').set(fornecedoresList);
+                    }
+                    atualizarSelectFornecedores();
+                });
+
+                // Escutar mudanças nas listas de rácios
+                database.ref('config/racios').on('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        raciosList = snapshot.val();
+                    } else {
+                        // Valores padrão
+                        raciosList = ['Inteiro', 'Rácio 1%', 'Rácio 20%', 'Rácio 30%', 'Rácio 50%'];
+                        database.ref('config/racios').set(raciosList);
+                    }
+                    atualizarSelectRacios();
                 });
 
             } catch (error) {
@@ -1161,12 +1398,16 @@
             document.getElementById('phValor').classList.remove('ph-ok');
             document.getElementById('fermentoOutro').style.display = 'none';
             document.getElementById('producaoOutro').style.display = 'none';
+            document.getElementById('loteLeite').value = '';
+            document.getElementById('fornecedor').value = '';
+            document.getElementById('racio').value = '';
             document.getElementById('ph1').value = '';
             document.getElementById('ph2').value = '';
             document.getElementById('ph3').value = '';
             document.getElementById('phAntesCoalho').value = '';
             document.getElementById('tempoCoagulacao').value = '';
             document.getElementById('phInicioEnchimento').value = '';
+            document.getElementById('observacoes').value = '';
             currentDraftId = null;
             document.getElementById('currentDraftIndicator').classList.remove('show');
         }
@@ -1211,6 +1452,8 @@
                 id: currentDraftId || Date.now().toString(),
                 data: document.getElementById('data').value,
                 tanque: document.getElementById('tanque').value,
+                loteLeite: document.getElementById('loteLeite').value || '',
+                fornecedor: document.getElementById('fornecedor').value || '',
                 receita: document.getElementById('receita').value,
                 producao: producaoValue,
                 gordura: parseFloat(document.getElementById('gordura').value),
@@ -1226,6 +1469,7 @@
                 ph1: document.getElementById('ph1').value || '',
                 ph2: document.getElementById('ph2').value || '',
                 ph3: document.getElementById('ph3').value || '',
+                observacoes: document.getElementById('observacoes').value || '',
                 timestamp: new Date().toISOString(),
                 status: 'completo'
             };
@@ -1312,6 +1556,8 @@
                 draftName: draftName,
                 data: data,
                 tanque: tanque,
+                loteLeite: document.getElementById('loteLeite').value,
+                fornecedor: document.getElementById('fornecedor').value,
                 receita: receita,
                 producao: producaoValue,
                 gordura: document.getElementById('gordura').value,
@@ -1328,6 +1574,7 @@
                 ph1: document.getElementById('ph1').value,
                 ph2: document.getElementById('ph2').value,
                 ph3: document.getElementById('ph3').value,
+                observacoes: document.getElementById('observacoes').value,
                 fermentoOutro: document.getElementById('fermentoOutroTexto').value,
                 producaoOutro: document.getElementById('producaoOutroTexto').value,
                 lastModified: new Date().toISOString(),
@@ -1400,6 +1647,8 @@
                 draftName: draftName,
                 data: data,
                 tanque: tanque,
+                loteLeite: document.getElementById('loteLeite').value,
+                fornecedor: document.getElementById('fornecedor').value,
                 receita: receita,
                 producao: producaoValue,
                 gordura: document.getElementById('gordura').value,
@@ -1416,6 +1665,7 @@
                 ph1: document.getElementById('ph1').value,
                 ph2: document.getElementById('ph2').value,
                 ph3: document.getElementById('ph3').value,
+                observacoes: document.getElementById('observacoes').value,
                 fermentoOutro: document.getElementById('fermentoOutroTexto').value,
                 producaoOutro: document.getElementById('producaoOutroTexto').value,
                 lastModified: new Date().toISOString(),
@@ -1527,6 +1777,8 @@
             // Preencher formulário com dados do draft
             document.getElementById('data').value = draft.data || '';
             document.getElementById('tanque').value = draft.tanque || '';
+            document.getElementById('loteLeite').value = draft.loteLeite || '';
+            document.getElementById('fornecedor').value = draft.fornecedor || '';
             document.getElementById('receita').value = draft.receita || '';
             document.getElementById('gordura').value = draft.gordura || '';
             document.getElementById('proteina').value = draft.proteina || '';
@@ -1540,6 +1792,7 @@
             document.getElementById('ph1').value = draft.ph1 || '';
             document.getElementById('ph2').value = draft.ph2 || '';
             document.getElementById('ph3').value = draft.ph3 || '';
+            document.getElementById('observacoes').value = draft.observacoes || '';
 
             // Fermento
             if (draft.fermento && ['111', '112', '113', '225', '226'].includes(draft.fermento)) {
@@ -1617,6 +1870,181 @@
         }
 
         // ========================================
+        // GESTÃO DE LISTAS DINÂMICAS
+        // ========================================
+
+        function atualizarSelectFornecedores() {
+            const select = document.getElementById('fornecedor');
+            const currentValue = select.value;
+            
+            select.innerHTML = '<option value="">Selecione...</option>';
+            fornecedoresList.forEach(fornecedor => {
+                const option = document.createElement('option');
+                option.value = fornecedor;
+                option.textContent = fornecedor;
+                select.appendChild(option);
+            });
+            
+            // Restaurar valor anterior se ainda existir
+            if (currentValue && fornecedoresList.includes(currentValue)) {
+                select.value = currentValue;
+            }
+        }
+
+        function atualizarSelectRacios() {
+            const select = document.getElementById('racio');
+            const currentValue = select.value;
+            
+            select.innerHTML = '<option value="">Selecione...</option>';
+            raciosList.forEach(racio => {
+                const option = document.createElement('option');
+                option.value = racio;
+                option.textContent = racio;
+                select.appendChild(option);
+            });
+            
+            // Restaurar valor anterior se ainda existir
+            if (currentValue && raciosList.includes(currentValue)) {
+                select.value = currentValue;
+            }
+        }
+
+        // Fornecedores
+        function adicionarFornecedor() {
+            const nome = prompt('Nome do novo fornecedor:');
+            if (nome && nome.trim()) {
+                if (fornecedoresList.includes(nome.trim())) {
+                    alert('Este fornecedor já existe!');
+                    return;
+                }
+                fornecedoresList.push(nome.trim());
+                database.ref('config/fornecedores').set(fornecedoresList);
+            }
+        }
+
+        function gerirFornecedores() {
+            const lista = document.getElementById('listaFornecedores');
+            lista.innerHTML = '';
+            
+            if (fornecedoresList.length === 0) {
+                lista.innerHTML = '<p style="text-align: center; color: #95a5a6; padding: 20px;">Nenhum fornecedor cadastrado</p>';
+            } else {
+                fornecedoresList.forEach((fornecedor, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'option-item';
+                    item.innerHTML = `
+                        <span class="option-name">${fornecedor}</span>
+                        <button class="btn-delete-option" onclick="eliminarFornecedor(${index})">🗑️ Eliminar</button>
+                    `;
+                    lista.appendChild(item);
+                });
+            }
+            
+            document.getElementById('modalFornecedores').classList.add('show');
+        }
+
+        function adicionarNovoFornecedor() {
+            const input = document.getElementById('novoFornecedor');
+            const nome = input.value.trim();
+            
+            if (!nome) {
+                alert('Por favor, insira um nome!');
+                return;
+            }
+            
+            if (fornecedoresList.includes(nome)) {
+                alert('Este fornecedor já existe!');
+                return;
+            }
+            
+            fornecedoresList.push(nome);
+            database.ref('config/fornecedores').set(fornecedoresList);
+            input.value = '';
+            gerirFornecedores(); // Atualizar lista
+        }
+
+        function eliminarFornecedor(index) {
+            if (!confirm(`Tem certeza que deseja eliminar "${fornecedoresList[index]}"?`)) return;
+            
+            fornecedoresList.splice(index, 1);
+            database.ref('config/fornecedores').set(fornecedoresList);
+            gerirFornecedores(); // Atualizar lista
+        }
+
+        // Rácios
+        function adicionarRacio() {
+            const nome = prompt('Nome do novo rácio (ex: Rácio 50%):');
+            if (nome && nome.trim()) {
+                if (raciosList.includes(nome.trim())) {
+                    alert('Este rácio já existe!');
+                    return;
+                }
+                raciosList.push(nome.trim());
+                database.ref('config/racios').set(raciosList);
+            }
+        }
+
+        function gerirRacios() {
+            const lista = document.getElementById('listaRacios');
+            lista.innerHTML = '';
+            
+            if (raciosList.length === 0) {
+                lista.innerHTML = '<p style="text-align: center; color: #95a5a6; padding: 20px;">Nenhum rácio cadastrado</p>';
+            } else {
+                raciosList.forEach((racio, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'option-item';
+                    item.innerHTML = `
+                        <span class="option-name">${racio}</span>
+                        <button class="btn-delete-option" onclick="eliminarRacio(${index})">🗑️ Eliminar</button>
+                    `;
+                    lista.appendChild(item);
+                });
+            }
+            
+            document.getElementById('modalRacios').classList.add('show');
+        }
+
+        function adicionarNovoRacio() {
+            const input = document.getElementById('novoRacio');
+            const nome = input.value.trim();
+            
+            if (!nome) {
+                alert('Por favor, insira um nome!');
+                return;
+            }
+            
+            if (raciosList.includes(nome)) {
+                alert('Este rácio já existe!');
+                return;
+            }
+            
+            raciosList.push(nome);
+            database.ref('config/racios').set(raciosList);
+            input.value = '';
+            gerirRacios(); // Atualizar lista
+        }
+
+        function eliminarRacio(index) {
+            if (!confirm(`Tem certeza que deseja eliminar "${raciosList[index]}"?`)) return;
+            
+            raciosList.splice(index, 1);
+            database.ref('config/racios').set(raciosList);
+            gerirRacios(); // Atualizar lista
+        }
+
+        function fecharModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        // Fechar modal ao clicar fora
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay')) {
+                e.target.classList.remove('show');
+            }
+        });
+
+        // ========================================
         // CARREGAR DADOS NA TABELA
         // ========================================
 
@@ -1650,6 +2078,8 @@
                         <tr>
                             <th>Data</th>
                             <th>Tanque</th>
+                            <th>Lote Leite</th>
+                            <th>Fornecedor</th>
                             <th>Receita</th>
                             <th>Produção</th>
                             <th>Gordura (%)</th>
@@ -1665,6 +2095,7 @@
                             <th>PH1</th>
                             <th>PH2</th>
                             <th>PH3</th>
+                            <th>Observações</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
@@ -1674,11 +2105,16 @@
             filteredData.forEach(item => {
                 const phClass = item.ph === 'OK' ? 'ph-ok-cell' : '';
                 const dataFormatada = new Date(item.data + 'T00:00:00').toLocaleDateString('pt-PT');
+                const observacoesTrunc = item.observacoes && item.observacoes.length > 50 
+                    ? item.observacoes.substring(0, 50) + '...' 
+                    : (item.observacoes || '-');
                 
                 html += `
                     <tr>
                         <td>${dataFormatada}</td>
                         <td>${item.tanque || '-'}</td>
+                        <td>${item.loteLeite || '-'}</td>
+                        <td>${item.fornecedor || '-'}</td>
                         <td>${item.receita}</td>
                         <td>${item.producao || '-'}</td>
                         <td>${item.gordura.toFixed(2)}</td>
@@ -1694,6 +2130,7 @@
                         <td>${item.ph1 || '-'}</td>
                         <td>${item.ph2 || '-'}</td>
                         <td>${item.ph3 || '-'}</td>
+                        <td title="${item.observacoes || ''}">${observacoesTrunc}</td>
                         <td><button class="delete-btn" onclick="deleteRecord('${item.id}')">🗑️ Eliminar</button></td>
                     </tr>
                 `;

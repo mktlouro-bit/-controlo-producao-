@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="app-version" content="1.0.0">
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Controlo PH Cura">
+    <link rel="manifest" href="manifest_cura.json">
+    <title>Controlo de PH na Cura - Lactilouro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: rgba(255,255,255,0.8);
+            font-size: 16px;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .connection-status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #28a745;
+        }
+
+        .connection-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #dc3545;
+        }
+
+        .connection-status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .connection-status.connected .dot {
+            background: #28a745;
+        }
+
+        .connection-status.disconnected .dot {
+            background: #dc3545;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            background: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #2c3e50;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+        }
+
+        .tab:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: white;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .lotes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .lote-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .lote-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            border-color: #667eea;
+        }
+
+        .lote-card.selected {
+            border-color: #28a745;
+            background: linear-gradient(135deg, #d4edda 0%, #a8d5ba 100%);
+        }
+
+        .lote-card.ativo {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        }
+
+        .lote-card.concluido {
+            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+        }
+
+        .lote-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .lote-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .lote-badge {
+            background: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .lote-badge.ativo {
+            background: #ffc107;
+            color: #856404;
+        }
+
+        .lote-badge.concluido {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .lote-info {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .lote-stats {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #856404;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-block {
+            width: 100%;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .modal-header h3 {
+            color: #2c3e50;
+            font-size: 24px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 30px;
+            color: #999;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .medicoes-list {
+            margin-top: 20px;
+        }
+
+        .medicao-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .medicao-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .medicao-data {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .medicao-ph {
+            font-size: 20px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .medicao-obs {
+            font-size: 13px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .empty-state-text {
+            font-size: 18px;
+            color: #666;
+        }
+
+        .version-indicator {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.05);
+            color: #666;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            z-index: 100;
+            font-family: monospace;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                width: 100%;
+                text-align: center;
+            }
+
+            .lotes-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .version-indicator {
+                display: none;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn-block {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status disconnected" id="connectionStatus">
+        <span class="dot"></span>
+        <span id="statusText">A conectar...</span>
+    </div>
+
+    <div class="version-indicator">v1.0.0</div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🧀 Controlo de PH na Cura</h1>
+            <p>Lactilouro - Queijos Dom Villas</p>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="selecionar">
+                📋 Selecionar Lotes
+            </div>
+            <div class="tab" data-tab="ativos">
+                🔬 Lotes Ativos (<span id="countAtivos">0</span>)
+            </div>
+            <div class="tab" data-tab="historico">
+                📊 Histórico & Análises
+            </div>
+        </div>
+
+        <!-- Secção: Selecionar Lotes -->
+        <div class="content-section active" id="section-selecionar">
+            <div class="card">
+                <h2>📦 Lotes da Produção</h2>
+                <p style="color: #666; margin-bottom: 20px;">Selecione os lotes que deseja monitorizar o PH durante a cura:</p>
+                
+                <div class="lotes-grid" id="lotesProducaoGrid">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📦</div>
+                        <div class="empty-state-text">A carregar lotes da produção...</div>
+                    </div>
+                </div>
+
+                <button class="btn btn-success btn-block" onclick="adicionarLotesSelecionados()" style="margin-top: 30px;">
+                    ✅ Adicionar Lotes Selecionados à Monitorização
+                </button>
+            </div>
+
+            <div class="card">
+                <h2>➕ Criar Lote Manual</h2>
+                <p style="color: #666; margin-bottom: 20px;">Para lotes não registados na produção:</p>
+                
+                <div class="form-group">
+                    <label>Lote / Identificação *</label>
+                    <input type="text" id="loteManual" placeholder="Ex: Lote ABC-2026">
+                </div>
+
+                <div class="form-group">
+                    <label>Artigo / Produto *</label>
+                    <div style="display: flex; gap: 10px; align-items: start;">
+                        <select id="artigoManual" style="flex: 1;">
+                            <option value="">Selecione...</option>
+                        </select>
+                        <button type="button" class="btn btn-secondary" onclick="adicionarArtigoRapido()" style="padding: 12px 16px; white-space: nowrap;">
+                            ➕ Adicionar
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="gerirArtigos()" style="padding: 12px 16px; white-space: nowrap;">
+                            ⚙️ Gerir
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Data Início Cura *</label>
+                    <input type="date" id="dataInicioManual">
+                </div>
+
+                <button class="btn btn-primary btn-block" onclick="criarLoteManual()">
+                    ➕ Criar e Adicionar à Monitorização
+                </button>
+            </div>
+        </div>
+
+        <!-- Secção: Lotes Ativos -->
+        <div class="content-section" id="section-ativos">
+            <div class="card">
+                <h2>🔬 Lotes em Monitorização</h2>
+                <p style="color: #666; margin-bottom: 20px;">Clique em "Medir PH" para registar novas medições:</p>
+                
+                <div class="lotes-grid" id="lotesAtivosGrid">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔬</div>
+                        <div class="empty-state-text">Nenhum lote em monitorização.<br>Vá a "Selecionar Lotes" para começar.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Secção: Histórico -->
+        <div class="content-section" id="section-historico">
+            <div class="card">
+                <h2>📊 Lotes Concluídos</h2>
+                <p style="color: #666; margin-bottom: 20px;">Análise e histórico de lotes já finalizados:</p>
+                
+                <div class="lotes-grid" id="lotesConcluidosGrid">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📊</div>
+                        <div class="empty-state-text">Nenhum lote concluído ainda.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Medir PH -->
+    <div class="modal" id="modalMedirPH">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📊 Medir PH - <span id="modalLoteNome"></span></h3>
+                <button class="modal-close" onclick="fecharModal('modalMedirPH')">×</button>
+            </div>
+
+            <div class="form-group">
+                <label>Data da Medição *</label>
+                <input type="date" id="medDataMedicao">
+            </div>
+
+            <div class="form-group">
+                <label>Hora da Medição *</label>
+                <input type="time" id="medHoraMedicao">
+            </div>
+
+            <div class="form-group">
+                <label>Valor PH *</label>
+                <input type="number" id="medValorPH" step="0.01" min="0" max="14" placeholder="Ex: 5.5">
+            </div>
+
+            <div class="form-group">
+                <label>Observações</label>
+                <textarea id="medObservacoes" rows="3" placeholder="Observações sobre a medição (opcional)"></textarea>
+            </div>
+
+            <div class="medicoes-list" id="medHistorico">
+                <h4 style="color: #2c3e50; margin-bottom: 15px;">📋 Histórico de Medições</h4>
+                <!-- Medições anteriores aparecem aqui -->
+            </div>
+
+            <button class="btn btn-primary btn-block" onclick="salvarMedicaoPH()">
+                💾 Salvar Medição
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal: Ver Análise -->
+    <div class="modal" id="modalAnalise">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3>📊 Análise - <span id="modalAnaliseLote"></span></h3>
+                <button class="modal-close" onclick="fecharModal('modalAnalise')">×</button>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="chartPH"></canvas>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 30px;">
+                <div class="card" style="text-align: center; padding: 20px;">
+                    <div style="font-size: 32px; font-weight: 700; color: #667eea;" id="statMedia">-</div>
+                    <div style="color: #666; font-size: 14px; margin-top: 5px;">PH Médio</div>
+                </div>
+                <div class="card" style="text-align: center; padding: 20px;">
+                    <div style="font-size: 32px; font-weight: 700; color: #28a745;" id="statMin">-</div>
+                    <div style="color: #666; font-size: 14px; margin-top: 5px;">PH Mínimo</div>
+                </div>
+                <div class="card" style="text-align: center; padding: 20px;">
+                    <div style="font-size: 32px; font-weight: 700; color: #dc3545;" id="statMax">-</div>
+                    <div style="color: #666; font-size: 14px; margin-top: 5px;">PH Máximo</div>
+                </div>
+                <div class="card" style="text-align: center; padding: 20px;">
+                    <div style="font-size: 32px; font-weight: 700; color: #ffc107;" id="statTotal">-</div>
+                    <div style="color: #666; font-size: 14px; margin-top: 5px;">Total Medições</div>
+                </div>
+            </div>
+
+            <div class="medicoes-list" id="analiseHistorico" style="margin-top: 30px;">
+                <!-- Lista completa de medições -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Gerir Artigos -->
+    <div class="modal" id="modalArtigos">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚙️ Gerir Artigos / Produtos</h3>
+                <button class="modal-close" onclick="fecharModal('modalArtigos')">×</button>
+            </div>
+
+            <div class="form-group">
+                <label>Adicionar Novo Artigo</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="novoArtigo" placeholder="Ex: Queijo Serra da Estrela">
+                    <button class="btn btn-primary" onclick="adicionarNovoArtigo()" style="white-space: nowrap;">
+                        ➕ Adicionar
+                    </button>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <h4 style="color: #2c3e50; margin-bottom: 15px;">📋 Artigos Cadastrados</h4>
+                <div id="listaArtigos" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Lista de artigos -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // CONFIGURAÇÃO FIREBASE
+        // ========================================
+        
+        const firebaseConfig = {
+       apiKey: "AIzaSyBUdUJiFtH_Axct5UXN9WErYbaB-o5WFX0",
+            authDomain: "lactilouro-producao.firebaseapp.com",
+            databaseURL: "https://lactilouro-producao-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "lactilouro-producao",
+            storageBucket: "lactilouro-producao.firebasestorage.app",
+            messagingSenderId: "530914223930",
+            appId: "1:530914223930:web:e9e8d922d65cb31e525203"
+        };
+
+        // ========================================
+        // VARIÁVEIS GLOBAIS
+        // ========================================
+        
+        let database;
+        let lotesProducao = [];
+        let lotesSelecionados = [];
+        let lotesAtivos = [];
+        let lotesConcluidos = [];
+        let currentLoteId = null;
+        let chartInstance = null;
+        let artigosList = [];
+
+        // ========================================
+        // INICIALIZAÇÃO
+        // ========================================
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            initFirebase();
+            setupTabs();
+            setDateDefaults();
+        });
+
+        function initFirebase() {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                database = firebase.database();
+                
+                // Escutar conexão
+                const connectedRef = database.ref('.info/connected');
+                connectedRef.on('value', (snap) => {
+                    const status = document.getElementById('connectionStatus');
+                    const statusText = document.getElementById('statusText');
+                    
+                    if (snap.val() === true) {
+                        status.className = 'connection-status connected';
+                        statusText.textContent = 'Conectado - Dados sincronizados';
+                    } else {
+                        status.className = 'connection-status disconnected';
+                        statusText.textContent = 'Offline - Reconectando...';
+                    }
+                });
+
+                // Carregar dados
+                carregarLotesProducao();
+                carregarLotesCura();
+                initializeArtigosList();
+                
+                console.log('Firebase inicializado com sucesso!');
+            } catch (error) {
+                console.error('Erro ao inicializar Firebase:', error);
+            }
+        }
+
+        function setDateDefaults() {
+            const hoje = new Date().toISOString().split('T')[0];
+            const agora = new Date().toTimeString().slice(0,5);
+            
+            document.getElementById('dataInicioManual').valueAsDate = new Date();
+            document.getElementById('medDataMedicao').valueAsDate = new Date();
+            document.getElementById('medHoraMedicao').value = agora;
+        }
+
+        // ========================================
+        // TABS
+        // ========================================
+        
+        function setupTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const targetTab = this.getAttribute('data-tab');
+                    switchTab(targetTab);
+                });
+            });
+        }
+
+        function switchTab(tabName) {
+            // Atualizar tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            
+            // Atualizar secções
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(`section-${tabName}`).classList.add('active');
+        }
+
+        // ========================================
+        // CARREGAR DADOS
+        // ========================================
+        
+        function carregarLotesProducao() {
+            database.ref('producao').on('value', (snapshot) => {
+                lotesProducao = [];
+                
+                if (snapshot.exists()) {
+                    snapshot.forEach((child) => {
+                        const data = child.val();
+                        lotesProducao.push({
+                            id: child.key,
+                            ...data
+                        });
+                    });
+                }
+                
+                renderLotesProducao();
+            });
+        }
+
+        function carregarLotesCura() {
+            database.ref('cura_ph').on('value', (snapshot) => {
+                lotesAtivos = [];
+                lotesConcluidos = [];
+                
+                if (snapshot.exists()) {
+                    snapshot.forEach((child) => {
+                        const data = child.val();
+                        const lote = {
+                            id: child.key,
+                            ...data
+                        };
+                        
+                        if (data.estado === 'ativo') {
+                            lotesAtivos.push(lote);
+                        } else {
+                            lotesConcluidos.push(lote);
+                        }
+                    });
+                }
+                
+                renderLotesAtivos();
+                renderLotesConcluidos();
+                updateCounters();
+            });
+        }
+
+        function updateCounters() {
+            document.getElementById('countAtivos').textContent = lotesAtivos.length;
+        }
+
+        // ========================================
+        // GESTÃO DE ARTIGOS
+        // ========================================
+        
+        function initializeArtigosList() {
+            console.log('Inicializando lista de artigos...');
+            
+            database.ref('config/artigos').once('value').then((snapshot) => {
+                if (!snapshot.exists()) {
+                    // Criar artigos padrão
+                    const artigosPadrao = [
+                        "Queijo Serra da Estrela",
+                        "Queijo Regional",
+                        "Queijo de Azeitão",
+                        "Queijo Fresco",
+                        "Queijo Curado",
+                        "Requeijão",
+                        "Queijo de Cabra"
+                    ];
+                    
+                    console.log('Criando artigos padrão:', artigosPadrao);
+                    database.ref('config/artigos').set(artigosPadrao);
+                }
+                
+                // Listener para mudanças
+                database.ref('config/artigos').on('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        artigosList = snapshot.val() || [];
+                        console.log('Artigos carregados do Firebase:', artigosList);
+                        atualizarSelectArtigos();
+                    }
+                });
+            });
+        }
+
+        function atualizarSelectArtigos() {
+            const select = document.getElementById('artigoManual');
+            if (!select) return;
+            
+            // Manter valor selecionado
+            const valorAtual = select.value;
+            
+            // Limpar e adicionar opção padrão
+            select.innerHTML = '<option value="">Selecione...</option>';
+            
+            // Adicionar artigos
+            artigosList.forEach(artigo => {
+                const option = document.createElement('option');
+                option.value = artigo;
+                option.textContent = artigo;
+                select.appendChild(option);
+            });
+            
+            // Restaurar seleção se ainda existir
+            if (valorAtual && artigosList.includes(valorAtual)) {
+                select.value = valorAtual;
+            }
+            
+            console.log('Select artigos atualizado. Total opções:', artigosList.length + 1);
+        }
+
+        function adicionarArtigoRapido() {
+            const novoArtigo = prompt('Nome do novo artigo/produto:');
+            
+            if (novoArtigo && novoArtigo.trim()) {
+                const artigo = novoArtigo.trim();
+                
+                // Verificar se já existe
+                if (artigosList.includes(artigo)) {
+                    alert('Este artigo já existe na lista!');
+                    return;
+                }
+                
+                // Adicionar ao Firebase
+                const novosArtigos = [...artigosList, artigo];
+                database.ref('config/artigos').set(novosArtigos);
+                
+                console.log('Artigo adicionado:', artigo);
+            }
+        }
+
+        function gerirArtigos() {
+            renderListaArtigos();
+            document.getElementById('modalArtigos').classList.add('show');
+        }
+
+        function adicionarNovoArtigo() {
+            const input = document.getElementById('novoArtigo');
+            const artigo = input.value.trim();
+            
+            if (!artigo) {
+                alert('Por favor, digite o nome do artigo!');
+                return;
+            }
+            
+            // Verificar se já existe
+            if (artigosList.includes(artigo)) {
+                alert('Este artigo já existe na lista!');
+                return;
+            }
+            
+            // Adicionar ao Firebase
+            const novosArtigos = [...artigosList, artigo];
+            database.ref('config/artigos').set(novosArtigos);
+            
+            // Limpar input
+            input.value = '';
+            
+            console.log('Artigo adicionado via modal:', artigo);
+        }
+
+        function eliminarArtigo(index) {
+            const artigo = artigosList[index];
+            
+            if (confirm(`Tem a certeza que deseja eliminar "${artigo}"?`)) {
+                const novosArtigos = artigosList.filter((_, i) => i !== index);
+                database.ref('config/artigos').set(novosArtigos);
+                
+                console.log('Artigo eliminado:', artigo);
+            }
+        }
+
+        function renderListaArtigos() {
+            const container = document.getElementById('listaArtigos');
+            
+            if (artigosList.length === 0) {
+                container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Nenhum artigo cadastrado.</p>';
+                return;
+            }
+            
+            container.innerHTML = artigosList.map((artigo, index) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                    <span style="font-weight: 500;">${artigo}</span>
+                    <button class="btn btn-secondary" onclick="eliminarArtigo(${index})" style="padding: 6px 12px; background: #dc3545;">
+                        🗑️ Eliminar
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // ========================================
+        // RENDER LOTES PRODUÇÃO
+        // ========================================
+        
+        function renderLotesProducao() {
+            const grid = document.getElementById('lotesProducaoGrid');
+            
+            if (lotesProducao.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📦</div>
+                        <div class="empty-state-text">Nenhum lote de produção encontrado.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = lotesProducao.map(lote => {
+                const jaMonitorizado = lotesAtivos.some(l => l.producao_id === lote.id) || 
+                                      lotesConcluidos.some(l => l.producao_id === lote.id);
+                const selected = lotesSelecionados.includes(lote.id);
+                
+                return `
+                    <div class="lote-card ${selected ? 'selected' : ''} ${jaMonitorizado ? 'disabled' : ''}" 
+                         onclick="${jaMonitorizado ? '' : `toggleLoteSelecao('${lote.id}')`}"
+                         style="${jaMonitorizado ? 'opacity: 0.5; cursor: not-allowed;' : ''}">
+                        <div class="lote-header">
+                            <div class="lote-title">${lote.producao || 'N/D'}</div>
+                            ${jaMonitorizado ? '<div class="lote-badge" style="background: #6c757d; color: white;">JÁ MONITORIZADO</div>' : ''}
+                        </div>
+                        <div class="lote-info">📅 Data: ${lote.data || 'N/D'}</div>
+                        <div class="lote-info">🧀 Tanque: ${lote.tanque || 'N/D'}</div>
+                        <div class="lote-info">📦 Lote: ${lote.lote_leite || 'N/D'}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleLoteSelecao(id) {
+            const index = lotesSelecionados.indexOf(id);
+            if (index > -1) {
+                lotesSelecionados.splice(index, 1);
+            } else {
+                lotesSelecionados.push(id);
+            }
+            renderLotesProducao();
+        }
+
+        // ========================================
+        // ADICIONAR LOTES
+        // ========================================
+        
+        function adicionarLotesSelecionados() {
+            if (lotesSelecionados.length === 0) {
+                alert('Por favor, selecione pelo menos um lote!');
+                return;
+            }
+
+            lotesSelecionados.forEach(id => {
+                const lote = lotesProducao.find(l => l.id === id);
+                if (lote) {
+                    const newId = 'cura_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    
+                    database.ref('cura_ph/' + newId).set({
+                        lote: lote.lote_leite || 'Lote ' + lote.producao,
+                        artigo: lote.producao || 'N/D',
+                        data_inicio: lote.data || new Date().toISOString().split('T')[0],
+                        origem: 'producao',
+                        producao_id: lote.id,
+                        estado: 'ativo',
+                        medicoes: []
+                    });
+                }
+            });
+
+            alert(`${lotesSelecionados.length} lote(s) adicionado(s) à monitorização!`);
+            lotesSelecionados = [];
+            renderLotesProducao();
+            switchTab('ativos');
+        }
+
+        function criarLoteManual() {
+            const lote = document.getElementById('loteManual').value.trim();
+            const artigo = document.getElementById('artigoManual').value;
+            const dataInicio = document.getElementById('dataInicioManual').value;
+
+            if (!lote || !artigo || !dataInicio) {
+                alert('Por favor, preencha todos os campos obrigatórios!');
+                return;
+            }
+
+            const newId = 'cura_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            
+            database.ref('cura_ph/' + newId).set({
+                lote: lote,
+                artigo: artigo,
+                data_inicio: dataInicio,
+                origem: 'manual',
+                estado: 'ativo',
+                medicoes: []
+            });
+
+            alert('Lote criado e adicionado à monitorização!');
+            
+            // Limpar formulário
+            document.getElementById('loteManual').value = '';
+            document.getElementById('artigoManual').value = '';
+            document.getElementById('dataInicioManual').valueAsDate = new Date();
+            
+            switchTab('ativos');
+        }
+
+        // ========================================
+        // RENDER LOTES ATIVOS
+        // ========================================
+        
+        function renderLotesAtivos() {
+            const grid = document.getElementById('lotesAtivosGrid');
+            
+            if (lotesAtivos.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔬</div>
+                        <div class="empty-state-text">Nenhum lote em monitorização.<br>Vá a "Selecionar Lotes" para começar.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = lotesAtivos.map(lote => {
+                const numMedicoes = lote.medicoes ? lote.medicoes.length : 0;
+                const ultimaMedicao = numMedicoes > 0 ? lote.medicoes[numMedicoes - 1] : null;
+                
+                return `
+                    <div class="lote-card ativo">
+                        <div class="lote-header">
+                            <div class="lote-title">${lote.lote}</div>
+                            <div class="lote-badge ativo">ATIVO</div>
+                        </div>
+                        <div class="lote-info">🧀 ${lote.artigo}</div>
+                        <div class="lote-info">📅 Início: ${lote.data_inicio}</div>
+                        ${ultimaMedicao ? `<div class="lote-info">🔬 Último PH: ${ultimaMedicao.ph} (${ultimaMedicao.data})</div>` : ''}
+                        
+                        <div class="lote-stats">
+                            <div class="stat">
+                                <div class="stat-value">${numMedicoes}</div>
+                                <div class="stat-label">Medições</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${calcularDiasCura(lote.data_inicio)}</div>
+                                <div class="stat-label">Dias Cura</div>
+                            </div>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" onclick="abrirMedirPH('${lote.id}')">
+                                📊 Medir PH
+                            </button>
+                            <button class="btn btn-success" onclick="concluirLote('${lote.id}')">
+                                ✅ Concluir
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function calcularDiasCura(dataInicio) {
+            const inicio = new Date(dataInicio);
+            const hoje = new Date();
+            const diff = hoje - inicio;
+            return Math.floor(diff / (1000 * 60 * 60 * 24));
+        }
+
+        // ========================================
+        // MEDIR PH
+        // ========================================
+        
+        function abrirMedirPH(loteId) {
+            currentLoteId = loteId;
+            const lote = lotesAtivos.find(l => l.id === loteId);
+            
+            if (!lote) return;
+
+            document.getElementById('modalLoteNome').textContent = lote.lote;
+            
+            // Resetar formulário
+            document.getElementById('medDataMedicao').valueAsDate = new Date();
+            const agora = new Date().toTimeString().slice(0,5);
+            document.getElementById('medHoraMedicao').value = agora;
+            document.getElementById('medValorPH').value = '';
+            document.getElementById('medObservacoes').value = '';
+
+            // Mostrar histórico
+            renderHistoricoMedicoes(lote);
+
+            document.getElementById('modalMedirPH').classList.add('show');
+        }
+
+        function renderHistoricoMedicoes(lote) {
+            const container = document.getElementById('medHistorico');
+            
+            if (!lote.medicoes || lote.medicoes.length === 0) {
+                container.innerHTML = `
+                    <h4 style="color: #2c3e50; margin-bottom: 15px;">📋 Histórico de Medições</h4>
+                    <p style="color: #999; text-align: center; padding: 20px;">Nenhuma medição registada ainda.</p>
+                `;
+                return;
+            }
+
+            const medicoesHTML = lote.medicoes.map(med => `
+                <div class="medicao-item">
+                    <div class="medicao-header">
+                        <div class="medicao-data">📅 ${med.data} às ${med.hora}</div>
+                        <div class="medicao-ph">PH: ${med.ph}</div>
+                    </div>
+                    ${med.observacoes ? `<div class="medicao-obs">💬 ${med.observacoes}</div>` : ''}
+                </div>
+            `).reverse().join('');
+
+            container.innerHTML = `
+                <h4 style="color: #2c3e50; margin-bottom: 15px;">📋 Histórico de Medições (${lote.medicoes.length})</h4>
+                ${medicoesHTML}
+            `;
+        }
+
+        function salvarMedicaoPH() {
+            if (!currentLoteId) return;
+
+            const data = document.getElementById('medDataMedicao').value;
+            const hora = document.getElementById('medHoraMedicao').value;
+            const ph = document.getElementById('medValorPH').value;
+            const obs = document.getElementById('medObservacoes').value.trim();
+
+            if (!data || !hora || !ph) {
+                alert('Por favor, preencha data, hora e valor PH!');
+                return;
+            }
+
+            const lote = lotesAtivos.find(l => l.id === currentLoteId);
+            const medicoes = lote.medicoes || [];
+
+            medicoes.push({
+                data: data,
+                hora: hora,
+                ph: parseFloat(ph),
+                observacoes: obs,
+                timestamp: Date.now()
+            });
+
+            database.ref('cura_ph/' + currentLoteId + '/medicoes').set(medicoes);
+
+            alert('Medição registada com sucesso!');
+            fecharModal('modalMedirPH');
+        }
+
+        // ========================================
+        // CONCLUIR LOTE
+        // ========================================
+        
+        function concluirLote(loteId) {
+            const lote = lotesAtivos.find(l => l.id === loteId);
+            
+            if (!lote.medicoes || lote.medicoes.length === 0) {
+                alert('Este lote não tem medições registadas. Adicione pelo menos uma medição antes de concluir.');
+                return;
+            }
+
+            if (confirm(`Tem a certeza que deseja concluir o lote "${lote.lote}"?\n\nEle será movido para o histórico.`)) {
+                database.ref('cura_ph/' + loteId + '/estado').set('concluido');
+                database.ref('cura_ph/' + loteId + '/data_conclusao').set(new Date().toISOString().split('T')[0]);
+                
+                alert('Lote concluído e movido para o histórico!');
+            }
+        }
+
+        // ========================================
+        // RENDER LOTES CONCLUÍDOS
+        // ========================================
+        
+        function renderLotesConcluidos() {
+            const grid = document.getElementById('lotesConcluidosGrid');
+            
+            if (lotesConcluidos.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📊</div>
+                        <div class="empty-state-text">Nenhum lote concluído ainda.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = lotesConcluidos.map(lote => {
+                const numMedicoes = lote.medicoes ? lote.medicoes.length : 0;
+                const phs = lote.medicoes ? lote.medicoes.map(m => m.ph) : [];
+                const phMedio = phs.length > 0 ? (phs.reduce((a, b) => a + b, 0) / phs.length).toFixed(2) : 'N/D';
+                const phMin = phs.length > 0 ? Math.min(...phs).toFixed(2) : 'N/D';
+                const phMax = phs.length > 0 ? Math.max(...phs).toFixed(2) : 'N/D';
+                
+                return `
+                    <div class="lote-card concluido">
+                        <div class="lote-header">
+                            <div class="lote-title">${lote.lote}</div>
+                            <div class="lote-badge concluido">CONCLUÍDO</div>
+                        </div>
+                        <div class="lote-info">🧀 ${lote.artigo}</div>
+                        <div class="lote-info">📅 ${lote.data_inicio} → ${lote.data_conclusao}</div>
+                        <div class="lote-info">📊 PH Médio: ${phMedio} (min: ${phMin}, max: ${phMax})</div>
+                        
+                        <div class="lote-stats">
+                            <div class="stat">
+                                <div class="stat-value">${numMedicoes}</div>
+                                <div class="stat-label">Medições</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${calcularDiasCura(lote.data_inicio)}</div>
+                                <div class="stat-label">Dias Cura</div>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-info btn-block" onclick="verAnalise('${lote.id}')">
+                            📊 Ver Análise Completa
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ========================================
+        // ANÁLISE
+        // ========================================
+        
+        function verAnalise(loteId) {
+            const lote = lotesConcluidos.find(l => l.id === loteId);
+            if (!lote) return;
+
+            document.getElementById('modalAnaliseLote').textContent = lote.lote;
+
+            // Calcular estatísticas
+            const phs = lote.medicoes.map(m => m.ph);
+            const phMedio = (phs.reduce((a, b) => a + b, 0) / phs.length).toFixed(2);
+            const phMin = Math.min(...phs).toFixed(2);
+            const phMax = Math.max(...phs).toFixed(2);
+
+            document.getElementById('statMedia').textContent = phMedio;
+            document.getElementById('statMin').textContent = phMin;
+            document.getElementById('statMax').textContent = phMax;
+            document.getElementById('statTotal').textContent = phs.length;
+
+            // Gráfico
+            renderGraficoPH(lote);
+
+            // Lista de medições
+            const container = document.getElementById('analiseHistorico');
+            const medicoesHTML = lote.medicoes.map(med => `
+                <div class="medicao-item">
+                    <div class="medicao-header">
+                        <div class="medicao-data">📅 ${med.data} às ${med.hora}</div>
+                        <div class="medicao-ph">PH: ${med.ph}</div>
+                    </div>
+                    ${med.observacoes ? `<div class="medicao-obs">💬 ${med.observacoes}</div>` : ''}
+                </div>
+            `).join('');
+
+            container.innerHTML = `
+                <h4 style="color: #2c3e50; margin-bottom: 15px;">📋 Todas as Medições (${lote.medicoes.length})</h4>
+                ${medicoesHTML}
+            `;
+
+            document.getElementById('modalAnalise').classList.add('show');
+        }
+
+        function renderGraficoPH(lote) {
+            const ctx = document.getElementById('chartPH').getContext('2d');
+
+            // Destruir gráfico anterior
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            const labels = lote.medicoes.map(m => `${m.data} ${m.hora}`);
+            const data = lote.medicoes.map(m => m.ph);
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'PH',
+                        data: data,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Evolução do PH Durante a Cura',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Valor PH',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Data e Hora',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ========================================
+        // MODAIS
+        // ========================================
+        
+        function fecharModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+            currentLoteId = null;
+        }
+
+        // Fechar modal ao clicar fora
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('show');
+                    currentLoteId = null;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

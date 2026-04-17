@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="app-version" content="1.4.0">
+    <meta name="app-version" content="1.5.0">
     <meta name="theme-color" content="#2c3e50">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -463,9 +463,14 @@
         }
 
         .action-buttons {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             margin-top: 15px;
+        }
+
+        .action-buttons .btn-block {
+            grid-column: 1 / -1;
         }
 
         .floating-button {
@@ -550,7 +555,7 @@
         <span id="statusText">A conectar...</span>
     </div>
 
-    <div class="version-indicator">v1.4.0</div>
+    <div class="version-indicator">v1.5.0</div>
 
     <div class="container">
         <div class="header">
@@ -743,6 +748,9 @@
                         </button>
                         <button class="btn btn-info" onclick="toggleModoComparacao()" style="padding: 8px 16px; font-size: 13px;">
                             📊 Modo Comparação
+                        </button>
+                        <button class="btn btn-success" onclick="abrirAnalisesAvancadas()" style="padding: 8px 16px; font-size: 13px; background: #28a745;">
+                            📈 Análises Avançadas
                         </button>
                         <div style="flex: 1; display: flex; align-items: center; justify-content: flex-end; color: #666; font-size: 13px;">
                             <span id="filtroHistoricoResultado">Mostrando todos os lotes</span>
@@ -942,12 +950,89 @@
         </div>
     </div>
 
+    <!-- Modal: Análises Avançadas -->
+    <div class="modal" id="modalAnalisesAvancadas">
+        <div class="modal-content" style="max-width: 1200px;">
+            <div class="modal-header">
+                <h3>📈 Análises Avançadas</h3>
+                <button class="modal-close" onclick="fecharModal('modalAnalisesAvancadas')">×</button>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <h4 style="color: #2c3e50; margin-bottom: 15px;">🔍 Configurar Análise</h4>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="font-size: 13px;">Tipo de Análise</label>
+                        <select id="analiseAvancadaTipo" onchange="atualizarOpcoesAnalise()" style="padding: 10px;">
+                            <option value="receita">Por Receita</option>
+                            <option value="periodo">Por Período</option>
+                            <option value="receita_periodo">Receita + Período</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;" id="campoReceita">
+                        <label style="font-size: 13px;">Receita</label>
+                        <select id="analiseAvancadaReceita" style="padding: 10px;">
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;" id="campoDataInicio">
+                        <label style="font-size: 13px;">Data Início</label>
+                        <input type="date" id="analiseAvancadaDataInicio" style="padding: 10px;">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;" id="campoDataFim">
+                        <label style="font-size: 13px;">Data Fim</label>
+                        <input type="date" id="analiseAvancadaDataFim" style="padding: 10px;">
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="gerarAnaliseAvancada()" style="padding: 10px 20px;">
+                    📊 Gerar Análise
+                </button>
+            </div>
+
+            <div id="resultadoAnaliseAvancada" style="display: none;">
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #2c3e50; margin-bottom: 15px;">📊 Resultados</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <div class="card" style="text-align: center; padding: 15px;">
+                            <div style="font-size: 24px; font-weight: 700; color: #667eea;" id="analiseQtdLotes">-</div>
+                            <div style="color: #666; font-size: 12px; margin-top: 5px;">Total Lotes</div>
+                        </div>
+                        <div class="card" style="text-align: center; padding: 15px;">
+                            <div style="font-size: 24px; font-weight: 700; color: #28a745;" id="analisePhMedio">-</div>
+                            <div style="color: #666; font-size: 12px; margin-top: 5px;">PH Médio Geral</div>
+                        </div>
+                        <div class="card" style="text-align: center; padding: 15px;">
+                            <div style="font-size: 24px; font-weight: 700; color: #ffc107;" id="analisePhMin">-</div>
+                            <div style="color: #666; font-size: 12px; margin-top: 5px;">PH Mínimo</div>
+                        </div>
+                        <div class="card" style="text-align: center; padding: 15px;">
+                            <div style="font-size: 24px; font-weight: 700; color: #dc3545;" id="analisePhMax">-</div>
+                            <div style="color: #666; font-size: 12px; margin-top: 5px;">PH Máximo</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-container" style="height: 400px; margin-bottom: 20px;">
+                    <canvas id="chartAnaliseAvancada"></canvas>
+                </div>
+
+                <div id="tabelaAnaliseDetalhada" style="overflow-x: auto;">
+                    <!-- Tabela detalhada -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ========================================
         // CONFIGURAÇÃO FIREBASE
         // ========================================
         
-       
         const firebaseConfig = {
        apiKey: "AIzaSyBUdUJiFtH_Axct5UXN9WErYbaB-o5WFX0",
             authDomain: "lactilouro-producao.firebaseapp.com",
@@ -1713,6 +1798,216 @@
                 html += `<td style="padding: 12px; border: 1px solid #dee2e6;">${dias}</td>`;
             });
             html += '</tr>';
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // ========================================
+        // ANÁLISES AVANÇADAS
+        // ========================================
+        
+        function abrirAnalisesAvancadas() {
+            // Popular dropdown de receitas
+            const receitasUnicas = new Set();
+            lotesConcluidos.forEach(lote => {
+                if (lote.receita) receitasUnicas.add(lote.receita);
+            });
+            
+            const select = document.getElementById('analiseAvancadaReceita');
+            select.innerHTML = '<option value="">Todas as receitas</option>';
+            [...receitasUnicas].sort().forEach(receita => {
+                const option = document.createElement('option');
+                option.value = receita;
+                option.textContent = receita;
+                select.appendChild(option);
+            });
+            
+            // Mostrar/esconder campos
+            atualizarOpcoesAnalise();
+            
+            // Esconder resultados
+            document.getElementById('resultadoAnaliseAvancada').style.display = 'none';
+            
+            document.getElementById('modalAnalisesAvancadas').classList.add('show');
+        }
+
+        function atualizarOpcoesAnalise() {
+            const tipo = document.getElementById('analiseAvancadaTipo').value;
+            
+            const campoReceita = document.getElementById('campoReceita');
+            const campoDataInicio = document.getElementById('campoDataInicio');
+            const campoDataFim = document.getElementById('campoDataFim');
+            
+            if (tipo === 'receita') {
+                campoReceita.style.display = 'block';
+                campoDataInicio.style.display = 'none';
+                campoDataFim.style.display = 'none';
+            } else if (tipo === 'periodo') {
+                campoReceita.style.display = 'none';
+                campoDataInicio.style.display = 'block';
+                campoDataFim.style.display = 'block';
+            } else if (tipo === 'receita_periodo') {
+                campoReceita.style.display = 'block';
+                campoDataInicio.style.display = 'block';
+                campoDataFim.style.display = 'block';
+            }
+        }
+
+        function gerarAnaliseAvancada() {
+            const tipo = document.getElementById('analiseAvancadaTipo').value;
+            const receita = document.getElementById('analiseAvancadaReceita').value;
+            const dataInicio = document.getElementById('analiseAvancadaDataInicio').value;
+            const dataFim = document.getElementById('analiseAvancadaDataFim').value;
+            
+            // Validações
+            if (tipo === 'receita' && !receita) {
+                alert('Selecione uma receita!');
+                return;
+            }
+            if ((tipo === 'periodo' || tipo === 'receita_periodo') && (!dataInicio || !dataFim)) {
+                alert('Preencha as datas!');
+                return;
+            }
+            
+            // Filtrar lotes
+            let lotesFiltrados = lotesConcluidos.filter(lote => {
+                if (tipo === 'receita' || tipo === 'receita_periodo') {
+                    if (receita && lote.receita !== receita) return false;
+                }
+                
+                if (tipo === 'periodo' || tipo === 'receita_periodo') {
+                    if (lote.data_inicio < dataInicio || lote.data_inicio > dataFim) return false;
+                }
+                
+                return true;
+            });
+            
+            if (lotesFiltrados.length === 0) {
+                alert('Nenhum lote encontrado com os critérios selecionados!');
+                return;
+            }
+            
+            // Mostrar resultados
+            mostrarResultadosAnalise(lotesFiltrados, tipo, receita);
+        }
+
+        function mostrarResultadosAnalise(lotes, tipo, receita) {
+            // Calcular estatísticas gerais
+            let todosPHs = [];
+            lotes.forEach(lote => {
+                if (lote.medicoes) {
+                    lote.medicoes.forEach(med => todosPHs.push(med.ph));
+                }
+            });
+            
+            const phMedio = todosPHs.length > 0 ? (todosPHs.reduce((a, b) => a + b, 0) / todosPHs.length).toFixed(2) : '-';
+            const phMin = todosPHs.length > 0 ? Math.min(...todosPHs).toFixed(2) : '-';
+            const phMax = todosPHs.length > 0 ? Math.max(...todosPHs).toFixed(2) : '-';
+            
+            document.getElementById('analiseQtdLotes').textContent = lotes.length;
+            document.getElementById('analisePhMedio').textContent = phMedio;
+            document.getElementById('analisePhMin').textContent = phMin;
+            document.getElementById('analisePhMax').textContent = phMax;
+            
+            // Criar gráfico
+            criarGraficoAnaliseAvancada(lotes, tipo);
+            
+            // Criar tabela
+            criarTabelaAnaliseAvancada(lotes);
+            
+            // Mostrar resultados
+            document.getElementById('resultadoAnaliseAvancada').style.display = 'block';
+        }
+
+        function criarGraficoAnaliseAvancada(lotes, tipo) {
+            const ctx = document.getElementById('chartAnaliseAvancada');
+            
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+            
+            // Preparar dados
+            const datasets = lotes.slice(0, 10).map((lote, index) => {
+                const medicoes = lote.medicoes || [];
+                const cores = ['#667eea', '#28a745', '#dc3545', '#ffc107', '#17a2b8', '#6c757d', '#e83e8c', '#fd7e14', '#20c997', '#6610f2'];
+                
+                return {
+                    label: lote.lote,
+                    data: medicoes.map((m, i) => ({ x: i + 1, y: m.ph })),
+                    borderColor: cores[index % cores.length],
+                    backgroundColor: cores[index % cores.length] + '33',
+                    tension: 0.4,
+                    fill: false
+                };
+            });
+            
+            const titulo = lotes.length > 10 
+                ? `Evolução de PH (primeiros 10 de ${lotes.length} lotes)`
+                : `Evolução de PH (${lotes.length} lotes)`;
+            
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: { datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: titulo,
+                            font: { size: 18, weight: 'bold' }
+                        },
+                        legend: { 
+                            display: lotes.length <= 5,
+                            position: 'top' 
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Medição #' },
+                            type: 'linear'
+                        },
+                        y: {
+                            title: { display: true, text: 'PH' },
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function criarTabelaAnaliseAvancada(lotes) {
+            const container = document.getElementById('tabelaAnaliseDetalhada');
+            
+            let html = '<h4 style="color: #2c3e50; margin-bottom: 15px;">📋 Detalhes por Lote</h4>';
+            html += '<table style="width: 100%; border-collapse: collapse;">';
+            html += '<thead><tr style="background: #f8f9fa;">';
+            html += '<th style="padding: 12px; border: 1px solid #dee2e6;">Lote</th>';
+            html += '<th style="padding: 12px; border: 1px solid #dee2e6;">Receita</th>';
+            html += '<th style="padding: 12px; border: 1px solid #dee2e6;">Data Início</th>';
+            html += '<th style="padding: 12px; border: 1px solid #dee2e6;">Medições</th>';
+            html += '<th style="padding: 12px; border: 1px solid #dee2e6;">PH Médio</th>';
+            html += '<th style="padding: 12px; border: 1px solid #dee2e6;">PH Min</th>';
+            html += '<th style="padding: 12px; border: 1px solid #dee2e6;">PH Max</th>';
+            html += '</tr></thead><tbody>';
+            
+            lotes.forEach(lote => {
+                const phs = lote.medicoes ? lote.medicoes.map(m => m.ph) : [];
+                const media = phs.length > 0 ? (phs.reduce((a, b) => a + b, 0) / phs.length).toFixed(2) : 'N/D';
+                const min = phs.length > 0 ? Math.min(...phs).toFixed(2) : 'N/D';
+                const max = phs.length > 0 ? Math.max(...phs).toFixed(2) : 'N/D';
+                
+                html += '<tr>';
+                html += `<td style="padding: 12px; border: 1px solid #dee2e6;">${lote.lote}</td>`;
+                html += `<td style="padding: 12px; border: 1px solid #dee2e6;">${lote.receita || 'N/D'}</td>`;
+                html += `<td style="padding: 12px; border: 1px solid #dee2e6;">${lote.data_inicio}</td>`;
+                html += `<td style="padding: 12px; border: 1px solid #dee2e6;">${phs.length}</td>`;
+                html += `<td style="padding: 12px; border: 1px solid #dee2e6;">${media}</td>`;
+                html += `<td style="padding: 12px; border: 1px solid #dee2e6;">${min}</td>`;
+                html += `<td style="padding: 12px; border: 1px solid #dee2e6;">${max}</td>`;
+                html += '</tr>';
+            });
             
             html += '</tbody></table>';
             container.innerHTML = html;
